@@ -245,7 +245,9 @@ void ADungeonGeneratorBase::InstantiateRoom(URoom* Room)
 		if (!Room->IsDoorInstanced(i))
 		{
 			bool Flipped = false;
-			TSubclassOf<ADoor> DoorClass = ChooseDoor(Room->GetRoomData(), nullptr != r ? r->GetRoomData() : nullptr, Room->GetRoomData()->Doors[i].Type, Flipped);
+			const UDoorType* DoorA = Room->GetRoomData()->Doors[i].Type;
+			const UDoorType* DoorB = (r != nullptr && j >= 0) ? r->GetRoomData()->Doors[j].Type : nullptr;
+			TSubclassOf<ADoor> DoorClass = ChooseDoor(Room->GetRoomData(), nullptr != r ? r->GetRoomData() : nullptr, DoorA, DoorB, Flipped);
 
 			if (nullptr != DoorClass)
 			{
@@ -547,7 +549,7 @@ void ADungeonGeneratorBase::OnStateEnd(EGenerationState State)
 
 // ===== Default Native Events Implementations =====
 
-TSubclassOf<ADoor> ADungeonGeneratorBase::ChooseDoor_Implementation(const URoomData* CurrentRoom, const URoomData* NextRoom, const UDoorType* DoorType, bool& Flipped)
+TSubclassOf<ADoor> ADungeonGeneratorBase::ChooseDoor_Implementation(const URoomData* CurrentRoom, const URoomData* NextRoom, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped)
 {
 	DungeonLog_Error("Error: ChooseDoor not implemented");
 	return nullptr;

@@ -32,9 +32,25 @@ UDoorType::UDoorType()
 #if WITH_EDITOR
 	Description = FText::FromString(TEXT("No Description"));
 #endif
+	bCompatibleWithItself = true;
 }
 
 FVector UDoorType::GetSize(const UDoorType* DoorType)
 {
 	return IsValid(DoorType) ? DoorType->Size : Dungeon::DefaultDoorSize();
+}
+
+bool UDoorType::AreCompatible(const UDoorType* A, const UDoorType* B)
+{
+	// If both are null, they are compatible
+	if (!IsValid(A) && !IsValid(B))
+		return true;
+
+	// If only one of them is null, they are not compatible
+	if (!IsValid(A) || !IsValid(B))
+		return false;
+
+	if (A == B)
+		return A->bCompatibleWithItself;
+	return A->Compatibility.Contains(B) || B->Compatibility.Contains(A);
 }

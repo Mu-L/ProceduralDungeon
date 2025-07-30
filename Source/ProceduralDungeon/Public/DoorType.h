@@ -40,6 +40,9 @@ public:
 	// or the default door size in plugin's settings if no door type defined.
 	static FVector GetSize(const UDoorType* DoorType);
 
+	// Returns true if one of the door type is explicitely set to be compatible with the other.
+	static bool AreCompatible(const UDoorType* A, const UDoorType* B);
+
 protected:
 	// Size of the door bounds, only used by the debug draw as a visual hint for designers and artists.
 	UPROPERTY(EditInstanceOnly, Category = "Door Type", meta = (ClampMin = 0))
@@ -50,4 +53,12 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Door Type")
 	FText Description;
 #endif
+
+	// Can this door type be connected with itself?
+	UPROPERTY(EditInstanceOnly, Category = "Door Type")
+	bool bCompatibleWithItself;
+
+	// Which door types are compatible with this one
+	UPROPERTY(EditInstanceOnly, Category = "Door Type")
+	TArray<UDoorType*> Compatibility;
 };
