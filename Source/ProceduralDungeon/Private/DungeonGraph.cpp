@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2023 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2023 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -377,7 +377,7 @@ bool UDungeonGraph::FilterAndSortRooms(const TArray<URoomData*>& RoomList, const
 			const FIntVector RoomLocation = TargetDoor.Position - Rotate(Door.Position, RoomDirection);
 
 			// Filter out the rooms that does not pass the constraints
-			if (!URoomData::DoesPassAllConstraints(RoomData, RoomLocation, RoomDirection))
+			if (!URoomData::DoesPassAllConstraints(this, RoomData, RoomLocation, RoomDirection))
 				continue;
 
 			FRoomCandidate Candidate;

@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -120,7 +120,7 @@ FVector URoomData::GetRoomUnit() const
 	return UDungeonSettings::GetRoomUnit(GetSettings());
 }
 
-bool URoomData::DoesPassAllConstraints(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction)
+bool URoomData::DoesPassAllConstraints(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction)
 {
 	if (!IsValid(RoomData))
 	{
@@ -135,7 +135,7 @@ bool URoomData::DoesPassAllConstraints(const URoomData* RoomData, FIntVector Loc
 			continue;
 		}
 
-		if (!Constraint->Check(RoomData, Location, Direction))
+		if (!Constraint->Check(Dungeon, RoomData, Location, Direction))
 			return false;
 	}
 	return true;

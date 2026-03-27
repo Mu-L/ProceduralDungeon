@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2024 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2024 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -406,7 +406,7 @@ bool FRoomDataTests::RunTest(const FString& Parameters)
 
 	// Test Room Constraints
 	{
-	#define CHECK_CONSTRAINTS(DATA) URoomData::DoesPassAllConstraints(DATA, FIntVector::ZeroValue, EDoorDirection::North)
+	#define CHECK_CONSTRAINTS(DATA) URoomData::DoesPassAllConstraints(nullptr, DATA, FIntVector::ZeroValue, EDoorDirection::North)
 
 		TestFalse("null data should fail.", CHECK_CONSTRAINTS(nullptr));
 

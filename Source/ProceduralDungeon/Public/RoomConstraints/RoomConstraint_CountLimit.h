@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2025 - 2026 All Rights Reserved.
+// Copyright Benoit Pelletier 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -9,13 +9,13 @@
 
 #include "RoomConstraints/RoomConstraint.h"
 #include "BoundsParams.h"
-#include "RoomConstraint_Location.generated.h"
+#include "RoomConstraint_CountLimit.generated.h"
 
 class URoomData;
 
 // Constraints the room to be inside the provided bounds
-UCLASS(meta = (DisplayName = "Location Constraint"))
-class PROCEDURALDUNGEON_API URoomConstraint_Location : public URoomConstraint
+UCLASS(meta = (DisplayName = "Count Limit Constraint"))
+class PROCEDURALDUNGEON_API URoomConstraint_CountLimit : public URoomConstraint
 {
 	GENERATED_BODY()
 
@@ -26,5 +26,5 @@ public:
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Constraint", meta = (AllowPrivateAccess = true))
-	FBoundsParams Limits;
+	int32 MaxCount {1};
 };

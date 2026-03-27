@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2025 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -21,5 +21,5 @@ class PROCEDURALDUNGEON_API URoomConstraint : public UObject
 
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintPure, Category = "Room Constraint")
-	bool Check(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction) const;
+	bool Check(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction) const;
 };

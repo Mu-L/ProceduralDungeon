@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -119,7 +119,7 @@ public:
 	FVector GetRoomUnit() const;
 
 	UFUNCTION(BlueprintPure, Category = "Room Contraint")
-	static bool DoesPassAllConstraints(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction);
+	static bool DoesPassAllConstraints(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction);
 
 	class FBoxCenterAndExtent GetBounds(FTransform Transform = FTransform::Identity) const;
 	FBoxMinAndMax GetIntBounds() const;
