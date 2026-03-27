@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2025 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -160,7 +160,7 @@ bool URoomConnection::IsDoorInstanced() const
 	return DoorInstance.IsValid();
 }
 
-ADoor* URoomConnection::GetDoorInstance() const
+AActor* URoomConnection::GetDoorInstance() const
 {
 	return DoorInstance.Get();
 }
@@ -223,13 +223,13 @@ FRotator URoomConnection::GetDoorRotation(bool bIgnoreGeneratorTransform) const
 	return Rotation.Rotator();
 }
 
-void URoomConnection::SetDoorClass(TSubclassOf<ADoor> InDoorClass, bool bInFlipped)
+void URoomConnection::SetDoorClass(TSubclassOf<AActor> InDoorClass, bool bInFlipped)
 {
 	DoorClass = InDoorClass;
 	bFlipped = bInFlipped;
 }
 
-ADoor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUseOwnerTransform)
+AActor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUseOwnerTransform)
 {
 	if (!IsValid(World))
 	{
@@ -270,7 +270,7 @@ ADoor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUseO
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = Owner;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ADoor* Door = GetWorld()->SpawnActor<ADoor>(DoorClass, InstanceDoorPos, InstanceDoorRot.Rotator(), SpawnParams);
+	AActor* Door = GetWorld()->SpawnActor<AActor>(DoorClass, InstanceDoorPos, InstanceDoorRot.Rotator(), SpawnParams);
 
 	if (!IsValid(Door))
 	{
@@ -278,17 +278,29 @@ ADoor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUseO
 		return nullptr;
 	}
 
-	Door->SetConnectingRooms(RoomA.Get(), RoomB.Get());
+	UObject* Implementer = ActorUtils::GetInterfaceImplementer<UDoorInterface>(Door);
+	if (IsValid(Implementer))
+		IDoorInterface::Execute_SetConnectingRooms(Implementer, RoomA.Get(), RoomB.Get());
+
 	DoorInstance = Door;
 
 	if (SaveData.IsValid())
 	{
 		// Load door data back if we have some saved data.
 		SerializeUObject(SaveData->DoorSavedData, Door, true);
-		DungeonLog_Info("Loaded saved data for door '%s' (open: %d, lock: %d)", *GetNameSafe(Door), Door->ShouldBeOpened(), Door->ShouldBeLocked());
+		DungeonLog_Info("Loaded saved data for door '%s'", *GetNameSafe(Door));
 	}
 
 	return Door;
+}
+
+void URoomConnection::DestroyDoor()
+{
+	if (!DoorInstance.IsValid())
+		return;
+
+	DoorInstance->Destroy();
+	DoorInstance.Reset();
 }
 
 void URoomConnection::OnRep_ID()
@@ -316,7 +328,7 @@ int32 URoomConnection::GetOtherDoorId(const URoomConnection* Conn, const URoom* 
 	return (Conn != nullptr) ? Conn->GetOtherDoorId(FromRoom) : -1;
 }
 
-ADoor* URoomConnection::GetDoorInstance(const URoomConnection* Conn)
+AActor* URoomConnection::GetDoorInstance(const URoomConnection* Conn)
 {
 	return (Conn != nullptr) ? Conn->DoorInstance.Get() : nullptr;
 }

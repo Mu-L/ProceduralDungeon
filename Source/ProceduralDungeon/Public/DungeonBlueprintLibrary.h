@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2023 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2023 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -24,7 +24,7 @@ class PROCEDURALDUNGEON_API UDungeonBlueprintLibrary : public UBlueprintFunction
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Utilities|Procedural Dungeon")
-	static bool IsDoorOfType(const TSubclassOf<class ADoor> DoorClass, const class UDoorType* DoorType);
+	static bool IsDoorOfType(const TSubclassOf<class AActor> DoorClass, const class UDoorType* DoorType);
 
 	UFUNCTION(BlueprintPure, Category = "Utilities", meta = (DisplayName = "Equal (Data Table Row Handle)", CompactNodeTitle = "=="))
 	static bool CompareDataTableRows(const FDataTableRowHandle& A, const FDataTableRowHandle& B);

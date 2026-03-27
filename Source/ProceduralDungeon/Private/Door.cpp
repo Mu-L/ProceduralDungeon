@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -128,7 +128,7 @@ void ADoor::Tick(float DeltaTime)
 #endif // ENABLE_DRAW_DEBUG
 }
 
-void ADoor::SetConnectingRooms(URoom* _RoomA, URoom* _RoomB)
+void ADoor::SetConnectingRooms_Implementation(URoom* _RoomA, URoom* _RoomB)
 {
 	check(HasAuthority());
 	SET_ACTOR_REPLICATED_PROPERTY_VALUE(RoomA, _RoomA);

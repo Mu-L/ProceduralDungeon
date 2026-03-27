@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2023 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2023 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -160,4 +160,12 @@ namespace ActorUtils
 
 	// Returns the player controller associated with the player state id.
 	class APlayerController* GetPlayerControllerFromPlayerId(const UObject* WorldContextObject, int32 PlayerId);
+
+	UObject* GetInterfaceImplementer(AActor* Actor, TSubclassOf<UInterface> InterfaceClass);
+
+	template<typename T UE_REQUIRES(TIsDerivedFrom<T, UInterface>::Value)>
+	UObject* GetInterfaceImplementer(AActor* Actor)
+	{
+		return GetInterfaceImplementer(Actor, T::StaticClass());
+	}
 }

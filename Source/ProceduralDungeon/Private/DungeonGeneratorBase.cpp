@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -427,7 +427,7 @@ void ADungeonGeneratorBase::ChooseDoorClasses()
 		URoomConnection::GetBothDoorTypes(Conn, DoorTypeA, DoorTypeB);
 
 		bool bFlipped = false;
-		TSubclassOf<ADoor> DoorClass = ChooseDoor(RoomAData, RoomA, RoomBData, RoomB, DoorTypeA, DoorTypeB, bFlipped);
+		TSubclassOf<AActor> DoorClass = ChooseDoor(RoomAData, RoomA, RoomBData, RoomB, DoorTypeA, DoorTypeB, bFlipped);
 		Conn->SetDoorClass(DoorClass, bFlipped);
 	}
 }
@@ -784,7 +784,7 @@ void ADungeonGeneratorBase::OnStateEnd(EGenerationState State)
 
 // ===== Default Native Events Implementations =====
 
-TSubclassOf<ADoor> ADungeonGeneratorBase::ChooseDoor_Implementation(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped)
+TSubclassOf<AActor> ADungeonGeneratorBase::ChooseDoor_Implementation(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped)
 {
 	DungeonLog_Error("Error: ChooseDoor not implemented");
 	return nullptr;

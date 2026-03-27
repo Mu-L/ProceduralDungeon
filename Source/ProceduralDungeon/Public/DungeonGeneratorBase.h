@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -21,7 +21,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGenerationEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FRoomEvent, const URoomData*, Room, const TScriptInterface<IReadOnlyRoom>&, RoomInstance);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FRoomDoorEvent, const URoomData*, Room, const FDoorDef&, Door);
 
-class ADoor;
 class URoom;
 class UDoorType;
 class UDungeonGraph;
@@ -114,7 +113,7 @@ public:
 	// @param Flipped Tells which room the door is facing between CurrentRoom (false) and NextRoom (true).
 	// @return The door actor class to spawn between CurrentRoom and NextRoom.
 	UFUNCTION(BlueprintNativeEvent, Category = "Dungeon Generator", meta = (DisplayName = "Choose Door"))
-	TSubclassOf<ADoor> ChooseDoor(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped);
+	TSubclassOf<AActor> ChooseDoor(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped);
 
 	// ===== Optional functions to override =====
 

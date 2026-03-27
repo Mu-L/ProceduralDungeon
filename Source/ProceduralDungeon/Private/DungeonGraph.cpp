@@ -726,11 +726,7 @@ void UDungeonGraph::UnloadAllRooms()
 	{
 		for (auto* RoomConnection : RoomConnections)
 		{
-			ADoor* Door = RoomConnection->GetDoorInstance();
-			if (IsValid(Door))
-			{
-				Door->Destroy();
-			}
+			RoomConnection->DestroyDoor();
 		}
 	}
 

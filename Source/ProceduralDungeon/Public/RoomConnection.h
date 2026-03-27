@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2025 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -14,7 +14,6 @@
 #include "RoomConnection.generated.h"
 
 class URoom;
-class ADoor;
 
 // A DungeonGraph subobject that represents a connection between two rooms.
 UCLASS(BlueprintType)
@@ -53,7 +52,7 @@ public:
 	bool IsDoorInstanced() const;
 
 	UFUNCTION(BlueprintPure, Category = "Room Connection")
-	ADoor* GetDoorInstance() const;
+	AActor* GetDoorInstance() const;
 
 	UFUNCTION(BlueprintPure, Category = "Room Connection")
 	FVector GetDoorLocation(bool bIgnoreGeneratorTransform) const;
@@ -61,13 +60,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Room Connection")
 	FRotator GetDoorRotation(bool bIgnoreGeneratorTransform) const;
 
-	void SetDoorClass(TSubclassOf<ADoor> DoorClass, bool bFlipped);
-	ADoor* InstantiateDoor(UWorld* World, AActor* Owner = nullptr, bool bUseOwnerTransform = false);
+	void SetDoorClass(TSubclassOf<AActor> DoorClass, bool bFlipped);
+	AActor* InstantiateDoor(UWorld* World, AActor* Owner = nullptr, bool bUseOwnerTransform = false);
+	void DestroyDoor();
 
 	// Convenient functions to return a default value if the connection is nullptr.
 	static URoom* GetOtherRoom(const URoomConnection* Conn, const URoom* FromRoom);
 	static int32 GetOtherDoorId(const URoomConnection* Conn, const URoom* FromRoom);
-	static ADoor* GetDoorInstance(const URoomConnection* Conn);
+	static AActor* GetDoorInstance(const URoomConnection* Conn);
 	static class UDoorType* GetDoorType(const URoomConnection* Conn);
 	static void GetBothDoorTypes(const URoomConnection* Conn, UDoorType*& DoorTypeA, UDoorType*& DoorTypeB);
 
@@ -107,13 +107,13 @@ private:
 	int32 RoomBDoorId {-1};
 
 	UPROPERTY()
-	TSubclassOf<ADoor> DoorClass {nullptr};
+	TSubclassOf<AActor> DoorClass {nullptr};
 
 	UPROPERTY(SaveGame)
 	bool bFlipped {false};
 
 	UPROPERTY(Replicated, Transient)
-	TWeakObjectPtr<ADoor> DoorInstance {nullptr};
+	TWeakObjectPtr<AActor> DoorInstance {nullptr};
 
 private:
 	// Store temporary data used only during saving/loading the game

@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -667,19 +667,19 @@ FRandomStream URoom::GetRandomStream() const
 	return GeneratorOwner->GetRandomStream();
 }
 
-ADoor* URoom::GetDoor(int32 DoorIndex) const
+AActor* URoom::GetDoor(int32 DoorIndex) const
 {
 	if (!Connections.IsValidIndex(DoorIndex))
 		return nullptr;
 	return URoomConnection::GetDoorInstance(Connections[DoorIndex].Get());
 }
 
-void URoom::GetAllDoors(TArray<ADoor*>& OutDoors) const
+void URoom::GetAllDoors(TArray<AActor*>& OutDoors) const
 {
 	OutDoors.Reset();
 	for (const auto& Connection : Connections)
 	{
-		ADoor* Door = URoomConnection::GetDoorInstance(Connection.Get());
+		AActor* Door = URoomConnection::GetDoorInstance(Connection.Get());
 		if (IsValid(Door))
 			OutDoors.Add(Door);
 	}
@@ -747,7 +747,7 @@ int32 URoom::GetConnectedRoomIndex(const URoom* OtherRoom) const
 	return -1;
 }
 
-void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<ADoor*>& Doors) const
+void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<AActor*>& Doors) const
 {
 	Doors.Empty();
 	for (const auto& Connection : Connections)
@@ -755,7 +755,7 @@ void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<ADoor*>& Doors) const
 		if (OtherRoom != URoomConnection::GetOtherRoom(Connection.Get(), this))
 			continue;
 
-		ADoor* Door = URoomConnection::GetDoorInstance(Connection.Get());
+		AActor* Door = URoomConnection::GetDoorInstance(Connection.Get());
 		if (IsValid(Door))
 			Doors.Add(Door);
 	}

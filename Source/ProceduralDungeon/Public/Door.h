@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -9,6 +9,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interfaces/DoorInterface.h"
 #include "ProceduralDungeonTypes.h"
 #include "Door.generated.h"
 
@@ -18,7 +19,7 @@ class UDoorType;
 // Base class for all door actors in the dungeon.
 // Use this class even if you want to create a wall to place instead of a door (when the door is not connected to another room for example).
 UCLASS(Blueprintable, ClassGroup = "Procedural Dungeon")
-class PROCEDURALDUNGEON_API ADoor : public AActor
+class PROCEDURALDUNGEON_API ADoor : public AActor, public IDoorInterface
 {
 	GENERATED_BODY()
 
@@ -26,11 +27,17 @@ public:
 	ADoor();
 
 public:
+	//~ Begin AActor interface
 	virtual void Tick(float DeltaTime) override;
 	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+	//~ End AActor interface
+
+	//~ Begin IDoorInterface interface
+	virtual const UDoorType* GetDoorType_Implementation() const override { return Type; }
+	virtual void SetConnectingRooms_Implementation(URoom* RoomA, URoom* RoomB) override;
+	//~ End IDoorInterface interface
 
 public:
-	void SetConnectingRooms(URoom* RoomA, URoom* RoomB);
 
 	UFUNCTION(BlueprintPure, Category = "Door", meta = (CompactNodeTitle = "Is Locked"))
 	FORCEINLINE bool IsLocked() const { return bLocked; }
@@ -42,8 +49,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
 	void Lock(bool lock);
-
-	const UDoorType* GetDoorType() const { return Type; }
 
 	bool ShouldBeOpened() const { return bShouldBeOpen; }
 	bool ShouldBeLocked() const { return bShouldBeLocked; }
