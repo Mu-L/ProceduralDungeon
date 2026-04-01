@@ -14,6 +14,7 @@
 #include "ProceduralDungeonLog.h"
 #include "Engine/Engine.h"
 #include "Interfaces/RoomContainer.h"
+#include "Interfaces/DoorInterface.h"
 #include "Utils/DungeonSaveUtils.h"
 #include "DungeonGeneratorBase.h"
 
