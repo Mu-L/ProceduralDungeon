@@ -235,6 +235,9 @@ protected:
 	// Recreate the bounds using the whole room list.
 	void RebuildBounds();
 
+	void UpdateOctree(URoom* Room);
+	void RebuildOctree();
+
 private:
 	UPROPERTY(Transient)
 	TArray<URoom*> Rooms;

@@ -101,13 +101,9 @@ void UDungeonGraph::AddRoom(URoom* Room)
 {
 	check(IsValid(Room));
 
-	for (int i = 0; i < Room->GetSubBoundsCount(); ++i)
-	{
-		Octree.AddElement(FDungeonOctreeElement(Room, i));
-	}
-
 	Rooms.Add(Room);
 	UpdateBounds(Room);
+	UpdateOctree(Room);
 }
 
 void UDungeonGraph::InitRooms()
@@ -221,6 +217,7 @@ void UDungeonGraph::RetrieveRoomsFromLoadedData()
 	IDungeonCustomSerialization::DispatchFixupReferences(this, this);
 
 	RebuildBounds();
+	RebuildOctree();
 }
 
 void UDungeonGraph::Connect(URoom* RoomA, int32 DoorA, URoom* RoomB, int32 DoorB)
@@ -478,11 +475,11 @@ void UDungeonGraph::Clear()
 	}
 
 	// Clear out data
-	Octree.Destroy();
 	Rooms.Empty();
 	RoomConnections.Empty();
 
 	RebuildBounds();
+	RebuildOctree();
 }
 
 int UDungeonGraph::CountRoomByPredicate(TFunction<bool(const URoom*)> Predicate) const
@@ -686,6 +683,7 @@ void UDungeonGraph::SynchronizeRooms()
 	{
 		CopyRooms(Rooms, ReplicatedRooms);
 		RebuildBounds();
+		RebuildOctree();
 		DungeonLog_Debug("Synchronized Rooms from server (length: %d)", Rooms.Num());
 		for (const URoom* Room : Rooms)
 		{
@@ -796,6 +794,24 @@ void UDungeonGraph::RebuildBounds()
 	for (const URoom* Room : Rooms)
 	{
 		UpdateBounds(Room);
+	}
+}
+
+void UDungeonGraph::UpdateOctree(URoom* Room)
+{
+	check(IsValid(Room));
+	for (int i = 0; i < Room->GetSubBoundsCount(); ++i)
+	{
+		Octree.AddElement(FDungeonOctreeElement(Room, i));
+	}
+}
+
+void UDungeonGraph::RebuildOctree()
+{
+	Octree.Destroy();
+	for (URoom* Room : Rooms)
+	{
+		UpdateOctree(Room);
 	}
 }
 

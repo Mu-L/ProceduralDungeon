@@ -16,9 +16,11 @@
 	#define USE_LEGACY_OCTREE 0
 #endif
 
+class URoom;
+
 struct FDungeonOctreeElement
 {
-	class URoom* Room;
+	URoom* Room;
 	FBoxCenterAndExtent Bounds;
 	int32 Index;
 
