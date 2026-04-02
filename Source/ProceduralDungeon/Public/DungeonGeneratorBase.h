@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -10,7 +10,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Math/RandomStream.h"
-#include "DungeonOctree.h"
 #include "ProceduralDungeonTypes.h"
 #include "CollisionQueryParams.h"
 #include "UObject/ScriptInterface.h"
@@ -21,7 +20,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGenerationEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FRoomEvent, const URoomData*, Room, const TScriptInterface<IReadOnlyRoom>&, RoomInstance);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FRoomDoorEvent, const URoomData*, Room, const FDoorDef&, Door);
 
-class ADoor;
 class URoom;
 class UDoorType;
 class UDungeonGraph;
@@ -114,7 +112,7 @@ public:
 	// @param Flipped Tells which room the door is facing between CurrentRoom (false) and NextRoom (true).
 	// @return The door actor class to spawn between CurrentRoom and NextRoom.
 	UFUNCTION(BlueprintNativeEvent, Category = "Dungeon Generator", meta = (DisplayName = "Choose Door"))
-	TSubclassOf<ADoor> ChooseDoor(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped);
+	TSubclassOf<AActor> ChooseDoor(const URoomData* CurrentRoom, const URoom* CurrentRoomInstance, const URoomData* NextRoom, const URoom* NextRoomInstance, const UDoorType* DoorType, const UDoorType* OtherDoorType, bool& Flipped);
 
 	// ===== Optional functions to override =====
 
@@ -286,16 +284,13 @@ private:
 	void UpdatePlayerRooms();
 
 	// Update the rooms visibility based on the player position
-	void UpdateRoomVisibility();
+	void UpdateRoomVisibility(bool bForceUpdate = false);
 
 	// Update the rooms relevancy based on the player position
 	void UpdateRoomRelevancy();
 
 	// Reset all data from a specific generation
 	void Reset();
-
-	// Clear and refill octree from the dungeon graph
-	void UpdateOctree();
 
 	// Initialize the seed depending on the seed type setting
 	void UpdateSeed();
@@ -352,6 +347,7 @@ public:
 	FVector GetDungeonOffset() const;
 	FQuat GetDungeonRotation() const;
 	const FTransform& GetDungeonTransform() const;
+	const UDungeonSettings* GetSettings() const { return SettingsOverrides; }
 
 	FORCEINLINE const UDungeonGraph* GetRooms() const { return Graph; }
 	FORCEINLINE EGenerationState GetCurrentState() const { return CurrentState; }
@@ -420,7 +416,6 @@ private:
 	};
 
 	// Occlusion culling system
-	TUniquePtr<FDungeonOctree> Octree;
 	TMap<int32, FPlayerRooms> PlayerRooms;
 
 	// Transient. Only used to detect when occlusion setting is changed.

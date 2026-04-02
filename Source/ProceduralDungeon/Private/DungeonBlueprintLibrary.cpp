@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2023 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2023 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -6,9 +6,10 @@
 // Please refer to the accompanying LICENSE file for further details.
 
 #include "DungeonBlueprintLibrary.h"
-#include "Door.h"
+#include "Interfaces/DoorInterface.h"
 #include "DoorType.h"
 #include "ProceduralDungeonUtils.h"
+#include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Pawn.h"
@@ -17,10 +18,18 @@
 #include "RoomCustomData.h"
 #include "Engine/Engine.h" // GEngine
 
-bool UDungeonBlueprintLibrary::IsDoorOfType(const TSubclassOf<ADoor> DoorClass, const UDoorType* DoorType)
+bool UDungeonBlueprintLibrary::IsDoorOfType(const TSubclassOf<AActor> DoorClass, const UDoorType* DoorType)
 {
-	ADoor* Door = DoorClass.GetDefaultObject();
-	return Door && (Door->GetDoorType() == DoorType);
+	AActor* Door = DoorClass.GetDefaultObject();
+	if (!IsValid(Door))
+		return false;
+
+	UObject* Implementer = ActorUtils::GetInterfaceImplementer<UDoorInterface>(Door);
+	if (!IsValid(Implementer))
+		return DoorType == nullptr;
+
+	const UDoorType* ActualDoorType = IDoorInterface::Execute_GetDoorType(Implementer);
+	return ActualDoorType == DoorType;
 }
 
 bool UDungeonBlueprintLibrary::CompareDataTableRows(const FDataTableRowHandle& A, const FDataTableRowHandle& B)

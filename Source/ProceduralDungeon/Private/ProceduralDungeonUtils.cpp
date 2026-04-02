@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2023 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2023 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -297,4 +297,25 @@ APlayerController* ActorUtils::GetPlayerControllerFromPlayerId(const UObject* Wo
 #else
 	return State->GetPlayerController();
 #endif
+}
+
+UObject* ActorUtils::GetInterfaceImplementer(AActor* Actor, TSubclassOf<UInterface> InterfaceClass)
+{
+	if (!IsValid(Actor) || InterfaceClass == nullptr)
+		return nullptr;
+
+	UClass* ActorClass = Actor->GetClass();
+	if (ActorClass && ActorClass->ImplementsInterface(InterfaceClass))
+		return Actor;
+
+	const auto Components = Actor->GetComponentsByInterface(InterfaceClass);
+	if (Components.Num() <= 0)
+		return nullptr;
+
+	if (Components.Num() > 1)
+	{
+		DungeonLog_WarningSilent("Multiple components have a %s interface. Only one used, remove the unnecessary ones to prevent any confusion!", *GetNameSafe(InterfaceClass));
+	}
+
+	return Components[0];
 }

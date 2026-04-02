@@ -32,6 +32,12 @@
 	FlushNetDormancy();                                      \
 	SET_OBJECT_REPLICATED_PROPERTY_VALUE(this, Property, Value);
 
+// Should be called in the actor component class of a replicated variable.
+// in place of Name = Value;
+#define SET_COMPONENT_REPLICATED_PROPERTY_VALUE(Property, Value) \
+	GetOwner()->FlushNetDormancy();                              \
+	SET_OBJECT_REPLICATED_PROPERTY_VALUE(this, Property, Value);
+
 // Should be called in a UReplicableObject derived class
 // in place of Name = Value;
 #define SET_SUBOBJECT_REPLICATED_PROPERTY_VALUE(Property, Value) \

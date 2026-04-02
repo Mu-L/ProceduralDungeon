@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -11,6 +11,7 @@
 #include "Engine/DataAsset.h"
 #include "ProceduralDungeonTypes.h"
 #include "Misc/EngineVersionComparison.h"
+#include "Math/GenericOctree.h" // for FBoxCenterAndExtent (required for UE5.0)
 #include "VoxelBounds/VoxelBounds.h"
 #include "RoomData.generated.h"
 
@@ -43,7 +44,6 @@ public:
 	UPROPERTY(EditInstanceOnly, Category = "Level")
 	TSoftObjectPtr<UWorld> Level {nullptr};
 
-public:
 	// This will force a random door to be chosen during the dungeon generation.
 	// DEPRECATED: It will be removed in a future version of the plugin. As a replacement, you should return -1 as DoorIndex in the ChooseNextRoomData of your DungeonGenerator.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Doors")
@@ -52,11 +52,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Doors")
 	TArray<FDoorDef> Doors {FDoorDef()};
 
-	UPROPERTY(EditAnywhere, Category = "Room")
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use BoundingBoxes instead"))
 	FIntVector FirstPoint {0};
 
-	UPROPERTY(EditAnywhere, Category = "Room")
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use BoundingBoxes instead"))
 	FIntVector SecondPoint {1};
+
+	UPROPERTY(EditAnywhere, Category = "Room")
+	TArray<FBoxMinAndMax> BoundingBoxes;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Room")
 	TSet<TSubclassOf<URoomCustomData>> CustomData;
@@ -69,6 +72,8 @@ public:
 
 public:
 	URoomData();
+
+	virtual void Serialize(FArchive& Ar) override;
 
 	UFUNCTION(BlueprintPure, Category = "Room Data", meta = (DisplayName = "Door Count", CompactNodeTitle = "Door Count"))
 	int GetNbDoor() const { return Doors.Num(); }
@@ -119,9 +124,10 @@ public:
 	FVector GetRoomUnit() const;
 
 	UFUNCTION(BlueprintPure, Category = "Room Contraint")
-	static bool DoesPassAllConstraints(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction);
+	static bool DoesPassAllConstraints(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction);
 
-	class FBoxCenterAndExtent GetBounds(FTransform Transform = FTransform::Identity) const;
+	FBoxCenterAndExtent GetBounds(FTransform Transform = FTransform::Identity) const;
+	FBoxCenterAndExtent GetSubBounds(int32 Index, FTransform Transform = FTransform::Identity) const;
 	FBoxMinAndMax GetIntBounds() const;
 	FVoxelBounds GetVoxelBounds() const;
 
@@ -130,6 +136,7 @@ public:
 #if !(UE_BUILD_SHIPPING) || WITH_EDITOR
 	bool IsDoorValid(int DoorIndex) const;
 	bool IsDoorDuplicate(int DoorIndex) const;
+	void DrawDebug(const UWorld* World, const FTransform& Transform, const FColor& Color);
 #endif // !(UE_BUILD_SHIPPING) || WITH_EDITOR
 
 #if WITH_EDITOR

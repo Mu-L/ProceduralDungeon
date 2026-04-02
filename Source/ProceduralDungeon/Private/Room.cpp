@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -513,15 +513,21 @@ bool URoom::IsOccupied(FIntVector Cell)
 {
 	FIntVector local = WorldToRoom(Cell);
 	FBoxMinAndMax Bounds = RoomData->GetIntBounds();
-	return local.X >= Bounds.Min.X && local.X < Bounds.Max.X
-		&& local.Y >= Bounds.Min.Y && local.Y < Bounds.Max.Y
-		&& local.Z >= Bounds.Min.Z && local.Z < Bounds.Max.Z;
+	return local.X >= Bounds.GetMin().X && local.X < Bounds.GetMax().X
+		&& local.Y >= Bounds.GetMin().Y && local.Y < Bounds.GetMax().Y
+		&& local.Z >= Bounds.GetMin().Z && local.Z < Bounds.GetMax().Z;
 }
 
 FBoxCenterAndExtent URoom::GetBounds() const
 {
 	check(IsValid(RoomData));
 	return RoomData->GetBounds(GetTransform());
+}
+
+int32 URoom::GetSubBoundsCount() const
+{
+	check(IsValid(RoomData));
+	return RoomData->BoundingBoxes.Num();
 }
 
 FBoxCenterAndExtent URoom::GetLocalBounds() const
@@ -540,6 +546,12 @@ FVoxelBounds URoom::GetVoxelBounds() const
 {
 	check(IsValid(RoomData));
 	return RoomToWorld(RoomData->GetVoxelBounds());
+}
+
+FBoxCenterAndExtent URoom::GetSubBounds(int32 Index) const
+{
+	check(IsValid(RoomData));
+	return RoomData->GetSubBounds(Index, GetTransform());
 }
 
 FTransform URoom::GetTransform() const
@@ -667,19 +679,19 @@ FRandomStream URoom::GetRandomStream() const
 	return GeneratorOwner->GetRandomStream();
 }
 
-ADoor* URoom::GetDoor(int32 DoorIndex) const
+AActor* URoom::GetDoor(int32 DoorIndex) const
 {
 	if (!Connections.IsValidIndex(DoorIndex))
 		return nullptr;
 	return URoomConnection::GetDoorInstance(Connections[DoorIndex].Get());
 }
 
-void URoom::GetAllDoors(TArray<ADoor*>& OutDoors) const
+void URoom::GetAllDoors(TArray<AActor*>& OutDoors) const
 {
 	OutDoors.Reset();
 	for (const auto& Connection : Connections)
 	{
-		ADoor* Door = URoomConnection::GetDoorInstance(Connection.Get());
+		AActor* Door = URoomConnection::GetDoorInstance(Connection.Get());
 		if (IsValid(Door))
 			OutDoors.Add(Door);
 	}
@@ -747,7 +759,7 @@ int32 URoom::GetConnectedRoomIndex(const URoom* OtherRoom) const
 	return -1;
 }
 
-void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<ADoor*>& Doors) const
+void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<AActor*>& Doors) const
 {
 	Doors.Empty();
 	for (const auto& Connection : Connections)
@@ -755,10 +767,21 @@ void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<ADoor*>& Doors) const
 		if (OtherRoom != URoomConnection::GetOtherRoom(Connection.Get(), this))
 			continue;
 
-		ADoor* Door = URoomConnection::GetDoorInstance(Connection.Get());
+		AActor* Door = URoomConnection::GetDoorInstance(Connection.Get());
 		if (IsValid(Door))
 			Doors.Add(Door);
 	}
+}
+
+TArray<URoomConnection*> URoom::GetConnections() const
+{
+	TArray<URoomConnection*> ValidConnections;
+	for (const auto& Connection : Connections)
+	{
+		if (Connection.IsValid())
+			ValidConnections.Add(Connection.Get());
+	}
+	return ValidConnections;
 }
 
 FVector URoom::GetBoundsCenter() const
@@ -993,39 +1016,6 @@ void URoom::DispatchCallbackToSavedLevelActors(TFunction<void(AActor*)> Callback
 		DungeonLog_Debug("- Dispatch to actor: %s.", *GetNameSafe(Actor));
 		Callback(Actor);
 	}
-}
-
-// AABB Overlapping
-bool URoom::Overlap(const URoom& A, const URoom& B)
-{
-	FBoxMinAndMax BoxA = A.GetIntBounds();
-	FBoxMinAndMax BoxB = B.GetIntBounds();
-	return FBoxMinAndMax::Overlap(BoxA, BoxB);
-}
-
-bool URoom::Overlap(const URoom& Room, const TArray<URoom*>& RoomList)
-{
-	bool overlap = false;
-	for (int i = 0; i < RoomList.Num() && !overlap; i++)
-	{
-		if (Overlap(Room, *RoomList[i]))
-		{
-			overlap = true;
-		}
-	}
-	return overlap;
-}
-
-URoom* URoom::GetRoomAt(FIntVector RoomCell, const TArray<URoom*>& RoomList)
-{
-	for (URoom* Room : RoomList)
-	{
-		if (IsValid(Room) && Room->IsOccupied(RoomCell))
-		{
-			return Room;
-		}
-	}
-	return nullptr;
 }
 
 ULevelStreamingDynamic* URoom::LoadInstance(UObject* WorldContextObject, const TSoftObjectPtr<UWorld>& Level, const FString& InstanceNameSuffix, FVector Location, FRotator Rotation)

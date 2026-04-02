@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2025 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -9,7 +9,7 @@
 #include "ProceduralDungeonLog.h"
 #include "Room.h"
 
-bool URoomConstraint_Direction::Check_Implementation(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction) const
+bool URoomConstraint_Direction::Check_Implementation(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction) const
 {
 	return AllowedDirections.Contains(Direction);
 }

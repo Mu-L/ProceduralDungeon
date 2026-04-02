@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -11,10 +11,12 @@
 #include "ProceduralDungeonTypes.h"
 #include "ProceduralDungeonUtils.h"
 #include "ProceduralDungeonLog.h"
+#include "ProceduralDungeonCustomVersion.h"
 #include "DoorType.h"
-#include "Math/GenericOctree.h" // FBoxCenterAndExtent
 #include "DungeonSettings.h"
 #include "RoomConstraints/RoomConstraint.h"
+#include "Serialization/CustomVersion.h"
+#include "DrawDebugHelpers.h"
 
 #if !USE_LEGACY_DATA_VALIDATION
 	#include "Misc/DataValidation.h"
@@ -23,6 +25,34 @@
 URoomData::URoomData()
 	: Super()
 {
+	BoundingBoxes.Add({FIntVector(0), FIntVector(1)});
+}
+
+void URoomData::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar.UsingCustomVersion(FProceduralDungeonCustomVersion::GUID);
+
+	// If loading an old version, we need to handle the migration
+	if (Ar.IsLoading())
+	{
+		const int32 DungeonVersion = Ar.CustomVer(FProceduralDungeonCustomVersion::GUID);
+		
+		if (DungeonVersion < FProceduralDungeonCustomVersion::RoomDataBoundingBoxesMigration)
+		{
+			DungeonLog_Warning("Migrating RoomData '%s' from legacy FirstPoint/SecondPoint to BoundingBoxes.", *GetName());
+
+			if (BoundingBoxes.Num() == 0)
+				BoundingBoxes.AddDefaulted();
+				
+			BoundingBoxes[0].SetMinAndMax(FirstPoint, SecondPoint);
+				
+			// Clear the legacy data after migration
+			FirstPoint = FIntVector(0);
+			SecondPoint = FIntVector(0);
+		}
+	}
 }
 
 const FDoorDef& URoomData::GetDoorDef(int32 DoorIndex) const
@@ -120,7 +150,7 @@ FVector URoomData::GetRoomUnit() const
 	return UDungeonSettings::GetRoomUnit(GetSettings());
 }
 
-bool URoomData::DoesPassAllConstraints(const URoomData* RoomData, FIntVector Location, EDoorDirection Direction)
+bool URoomData::DoesPassAllConstraints(const UDungeonGraph* Dungeon, const URoomData* RoomData, FIntVector Location, EDoorDirection Direction)
 {
 	if (!IsValid(RoomData))
 	{
@@ -135,7 +165,7 @@ bool URoomData::DoesPassAllConstraints(const URoomData* RoomData, FIntVector Loc
 			continue;
 		}
 
-		if (!Constraint->Check(RoomData, Location, Direction))
+		if (!Constraint->Check(Dungeon, RoomData, Location, Direction))
 			return false;
 	}
 	return true;
@@ -146,6 +176,13 @@ FBoxCenterAndExtent URoomData::GetBounds(FTransform Transform) const
 	return Dungeon::ToWorld(GetIntBounds(), GetRoomUnit(), Transform);
 }
 
+FBoxCenterAndExtent URoomData::GetSubBounds(int32 Index, FTransform Transform) const
+{
+	check(Index >= 0 && Index < BoundingBoxes.Num());
+	const FBoxMinAndMax& Box = BoundingBoxes[Index];
+	return Dungeon::ToWorld(Box, GetRoomUnit(), Transform);
+}
+
 FIntVector URoomData::GetSize() const
 {
 	return GetIntBounds().GetSize();
@@ -153,13 +190,13 @@ FIntVector URoomData::GetSize() const
 
 int URoomData::GetVolume() const
 {
-	FIntVector Size = GetSize();
-	return Size.X * Size.Y * Size.Z;
+	const FVoxelBounds Bounds = GetVoxelBounds();
+	return Bounds.GetCellCount();
 }
 
 FBoxMinAndMax URoomData::GetIntBounds() const
 {
-	return FBoxMinAndMax(FirstPoint, SecondPoint);
+	return GetVoxelBounds().GetBounds();
 }
 
 FVoxelBounds URoomData::GetVoxelBounds() const
@@ -169,49 +206,11 @@ FVoxelBounds URoomData::GetVoxelBounds() const
 
 	// For now, just convert the IntBounds into a VoxelBounds.
 	// When the VoxelBounds editor will be implemented, we will just have to return the serialized VoxelBounds.
-	FBoxMinAndMax Bounds = GetIntBounds();
-	for (int X = Bounds.Min.X; X < Bounds.Max.X; ++X)
+	for (const FBoxMinAndMax& Box : BoundingBoxes)
 	{
-		for (int Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
-		{
-			for (int Z = Bounds.Min.Z; Z < Bounds.Max.Z; ++Z)
-			{
-				CachedVoxelBounds.AddCell(FIntVector(X, Y, Z));
-			}
-		}
+		CachedVoxelBounds.AddBox(Box);
 	}
-
-	const FVoxelBoundsConnection WallConnection(EVoxelBoundsConnectionType::Wall);
-
-	// Fill top and bottom with walls.
-	for (int X = Bounds.Min.X; X < Bounds.Max.X; ++X)
-	{
-		for (int Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
-		{
-			CachedVoxelBounds.SetCellConnection(FIntVector(X, Y, Bounds.Min.Z), FVoxelBounds::EDirection::Down, WallConnection);
-			CachedVoxelBounds.SetCellConnection(FIntVector(X, Y, Bounds.Max.Z - 1), FVoxelBounds::EDirection::Up, WallConnection);
-		}
-	}
-
-	// Fill left and right with walls.
-	for (int Y = Bounds.Min.Y; Y < Bounds.Max.Y; ++Y)
-	{
-		for (int Z = Bounds.Min.Z; Z < Bounds.Max.Z; ++Z)
-		{
-			CachedVoxelBounds.SetCellConnection(FIntVector(Bounds.Min.X, Y, Z), FVoxelBounds::EDirection::West, WallConnection);
-			CachedVoxelBounds.SetCellConnection(FIntVector(Bounds.Max.X - 1, Y, Z), FVoxelBounds::EDirection::East, WallConnection);
-		}
-	}
-
-	// Fill front and back with walls.
-	for (int X = Bounds.Min.X; X < Bounds.Max.X; ++X)
-	{
-		for (int Z = Bounds.Min.Z; Z < Bounds.Max.Z; ++Z)
-		{
-			CachedVoxelBounds.SetCellConnection(FIntVector(X, Bounds.Min.Y, Z), FVoxelBounds::EDirection::South, WallConnection);
-			CachedVoxelBounds.SetCellConnection(FIntVector(X, Bounds.Max.Y - 1, Z), FVoxelBounds::EDirection::North, WallConnection);
-		}
-	}
+	CachedVoxelBounds.ResetToWalls();
 
 	// Add the doors
 	for (int i = 0; i < Doors.Num(); ++i)
@@ -248,32 +247,18 @@ bool URoomData::IsDoorValid(int DoorIndex) const
 {
 	check(DoorIndex >= 0 && DoorIndex < Doors.Num());
 
+	bool bFacingNoBox = true;
+	bool bAtLeastInABox = false;
 	const FDoorDef& DoorDef = Doors[DoorIndex];
-
-	FIntVector Min = IntVector::Min(FirstPoint, SecondPoint);
-	FIntVector Max = IntVector::Max(FirstPoint, SecondPoint);
-
-	// Check if door is in the room's bounds
-	if ((DoorDef.Position.X < Min.X || DoorDef.Position.X >= Max.X)
-		|| (DoorDef.Position.Y < Min.Y || DoorDef.Position.Y >= Max.Y)
-		|| (DoorDef.Position.Z < Min.Z || DoorDef.Position.Z >= Max.Z))
-		return false;
-
-	// Check if the door is on the edge of the room bounds
-	switch (DoorDef.Direction)
+	for (const auto& Box : BoundingBoxes)
 	{
-	case EDoorDirection::South:
-		return DoorDef.Position.X == Min.X;
-	case EDoorDirection::North:
-		return DoorDef.Position.X == (Max.X - 1);
-	case EDoorDirection::West:
-		return DoorDef.Position.Y == Min.Y;
-	case EDoorDirection::East:
-		return DoorDef.Position.Y == (Max.Y - 1);
-	default:
-		checkNoEntry();
-		return false;
+		bAtLeastInABox |= Box.IsInside(DoorDef.Position);
+
+		const FIntVector FacingCell = DoorDef.Position + ToIntVector(DoorDef.Direction);
+		bFacingNoBox &= !Box.IsInside(FacingCell);
 	}
+
+	return bAtLeastInABox && bFacingNoBox;
 }
 
 bool URoomData::IsDoorDuplicate(int DoorIndex) const
@@ -285,6 +270,18 @@ bool URoomData::IsDoorDuplicate(int DoorIndex) const
 			return true;
 	}
 	return false;
+}
+
+void URoomData::DrawDebug(const UWorld* World, const FTransform& Transform, const FColor& Color)
+{
+	if (!IsValid(World))
+		return;
+
+	for (const FBoxMinAndMax& BoundingBox : BoundingBoxes)
+	{
+		const FBoxCenterAndExtent Box = Dungeon::ToWorld(BoundingBox, GetRoomUnit(), Transform);
+		DrawDebugBox(World, Box.Center, Box.Extent, FQuat::Identity, Color, false, -1.0f, SDPG_World, 2.0f);
+	}
 }
 
 #endif // !(UE_BUILD_SHIPPING) || WITH_EDITOR
@@ -314,13 +311,22 @@ EDataValidationResult URoomData::IsDataValid(FDataValidationContext& Context) co
 		Result = EDataValidationResult::Invalid;
 	}
 
-	// Check if no room size is 0 on any axis
-	if (FirstPoint.X == SecondPoint.X
-		|| FirstPoint.Y == SecondPoint.Y
-		|| FirstPoint.Z == SecondPoint.Z)
+	if (BoundingBoxes.Num() <= 0)
 	{
-		VALIDATION_LOG_ERROR(FText::FromString(FString::Printf(TEXT("Room data \"%s\" has a size of 0 on at least one axis."), *GetName())));
+		VALIDATION_LOG_ERROR(FText::FromString(FString::Printf(TEXT("Room data \"%s\" should have at least one bounding box."), *GetName())));
 		Result = EDataValidationResult::Invalid;
+	}
+	else
+	{
+		// Check if all bounding boxes are valid
+		for (const FBoxMinAndMax& Box : BoundingBoxes)
+		{
+			if (!Box.IsValid())
+			{
+				VALIDATION_LOG_ERROR(FText::FromString(FString::Printf(TEXT("Room data \"%s\" has an invalid bounding box: %s."), *GetName(), *Box.ToString())));
+				Result = EDataValidationResult::Invalid;
+			}
+		}
 	}
 
 	if (Doors.Num() <= 0)

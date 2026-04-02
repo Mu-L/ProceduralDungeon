@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -6,16 +6,9 @@
 // Please refer to the accompanying LICENSE file for further details.
 
 #include "Door.h"
-#include "Room.h"
-#include "RoomLevel.h"
-#include "DrawDebugHelpers.h"
-#include "Net/UnrealNetwork.h"
-#include "Engine/Engine.h"
-#include "DungeonGenerator.h"
 #include "DoorType.h"
-#include "ProceduralDungeonUtils.h"
-#include "Utils/ReplicationUtils.h"
 #include "ProceduralDungeonLog.h"
+#include "Components/DoorComponent.h"
 
 ADoor::ADoor()
 {
@@ -26,127 +19,150 @@ ADoor::ADoor()
 
 	DefaultSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	RootComponent = DefaultSceneComponent;
+
+	DoorComponent = CreateDefaultSubobject<UDoorComponent>(TEXT("DoorComponent"));
 }
 
-void ADoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ADoor::PostInitializeComponents()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	Super::PostInitializeComponents();
 
-	FDoRepLifetimeParams Params;
-	Params.bIsPushBased = true;
-	DOREPLIFETIME_WITH_PARAMS(ADoor, bShouldBeLocked, Params);
-	DOREPLIFETIME_WITH_PARAMS(ADoor, bShouldBeOpen, Params);
-	DOREPLIFETIME_WITH_PARAMS(ADoor, RoomA, Params);
-	DOREPLIFETIME_WITH_PARAMS(ADoor, RoomB, Params);
+	if (!IsValid(DoorComponent))
+		return;
+
+	// Forward the component events to the actor events for retro-compatibility
+	DoorComponent->OnDoorLocked.AddDynamic(this, &ADoor::DispatchDoorLock);
+	DoorComponent->OnDoorOpened.AddDynamic(this, &ADoor::DispatchDoorOpen);
 }
 
-// Called every frame
-void ADoor::Tick(float DeltaTime)
+bool ADoor::IsLocked() const
 {
-	Super::Tick(DeltaTime);
+	if (!IsValid(DoorComponent))
+		return false;
 
-	// Tells if the door actor has been spawned by the dungeon generator or not.
-	// At least one of the room is valid when spawned by the dungeon generator.
-	// Both rooms are invalid if door has been spawned by another way.
-	const bool bSpawnedByDungeon = IsValid(RoomA) || IsValid(RoomB);
-
-	// The door manages itself its own visibility only when it has been spawned by the dungeon generator.
-	// If the door is placed in a RoomLevel or spawned by the user in other means, it is the responsibility
-	// of the RoomLevel or the user to manage the door's visibility.
-	if (bSpawnedByDungeon)
-	{
-		const bool bRoomAVisible = IsValid(RoomA) && RoomA->IsVisible();
-		const bool bRoomBVisible = IsValid(RoomB) && RoomB->IsVisible();
-
-		// Update door visibility
-		// A door is hidden ONLY when ALL those conditions are met:
-		// - The Room Culling is enabled.
-		// - The door is not `Always Visible`.
-		// - Both connected rooms are not visible.
-		// @TODO: this should not work with multiplayer games, because bHidden is replicated!
-		// It works only because it is updated each frame on clients too!
-		// The behavior will change if bHidden is updated once in a wile by an event instead!
-		// So, I should find another way to hide the actor... (avoiding if possible RootComponent::SetVisible)
-		SetActorHiddenInGame(Dungeon::OcclusionCulling()
-			&& !bAlwaysVisible
-			&& !(bRoomAVisible || bRoomBVisible)
-		);
-	}
-
-	// Update door's lock state
-	// A door is locked when ALL those conditions are met:
-	// - The door is not `Always Unlocked`.
-	// - The user tells the door should be locked.
-	// - The door is spawned by the dungeon generator AND one of the connected rooms is locked or missing.
-	const bool bPrevLocked = bLocked;
-	const bool bRoomALocked = !IsValid(RoomA) || RoomA->IsLocked();
-	const bool bRoomBLocked = !IsValid(RoomB) || RoomB->IsLocked();
-	bLocked = !bAlwaysUnlocked && (bShouldBeLocked || (bSpawnedByDungeon && (bRoomALocked || bRoomBLocked)));
-
-	if (bLocked != bPrevLocked)
-	{
-		DungeonLog_Debug("Door %s locked: %d", *GetNameSafe(this), bLocked);
-		if (bLocked)
-		{
-			OnDoorLock();
-			OnDoorLock_BP();
-		}
-		else
-		{
-			OnDoorUnlock();
-			OnDoorUnlock_BP();
-		}
-	}
-
-	// Update door's open state
-	const bool bPrevIsOpen = bIsOpen;
-	bIsOpen = bShouldBeOpen && !bLocked;
-	if (bIsOpen != bPrevIsOpen)
-	{
-		DungeonLog_Debug("Door %s open: %d", *GetNameSafe(this), bIsOpen);
-		if (bIsOpen)
-		{
-			OnDoorOpen();
-			OnDoorOpen_BP();
-		}
-		else
-		{
-			OnDoorClose();
-			OnDoorClose_BP();
-		}
-	}
-
-#if ENABLE_DRAW_DEBUG
-	// TODO: Place it in an editor module of the plugin
-	if (Dungeon::DrawDebug() && GetWorld()->WorldType == EWorldType::EditorPreview)
-	{
-		FDoorDef DoorDef;
-		DoorDef.Direction = EDoorDirection::NbDirection;
-		DoorDef.Type = Type;
-		FDoorDef::DrawDebug(GetWorld(), DoorDef, FVector::ZeroVector);
-	}
-#endif // ENABLE_DRAW_DEBUG
+	return DoorComponent->IsLocked();
 }
 
-void ADoor::SetConnectingRooms(URoom* _RoomA, URoom* _RoomB)
+bool ADoor::IsOpen() const
 {
-	check(HasAuthority());
-	SET_ACTOR_REPLICATED_PROPERTY_VALUE(RoomA, _RoomA);
-	SET_ACTOR_REPLICATED_PROPERTY_VALUE(RoomB, _RoomB);
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->IsOpen();
 }
 
 void ADoor::Open(bool bOpen)
 {
-	if (!HasAuthority())
+	if (!IsValid(DoorComponent))
 		return;
 
-	SET_ACTOR_REPLICATED_PROPERTY_VALUE(bShouldBeOpen, bOpen);
+	DoorComponent->Open(bOpen);
 }
 
 void ADoor::Lock(bool bLock)
 {
-	if (!HasAuthority())
+	if (!IsValid(DoorComponent))
 		return;
 
-	SET_ACTOR_REPLICATED_PROPERTY_VALUE(bShouldBeLocked, bLock)
+	DoorComponent->Lock(bLock);
+}
+
+bool ADoor::ShouldBeOpened() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->ShouldBeOpen();
+}
+
+bool ADoor::ShouldBeLocked() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->ShouldBeLocked();
+}
+
+const UDoorType* ADoor::GetDoorType() const
+{
+	if (!IsValid(DoorComponent))
+		return nullptr;
+
+	return DoorComponent->GetDoorType();
+}
+
+URoom* ADoor::GetRoomA() const
+{
+	if (!IsValid(DoorComponent))
+		return nullptr;
+
+	return DoorComponent->GetRoomA();
+}
+
+URoom* ADoor::GetRoomB() const
+{
+	if (!IsValid(DoorComponent))
+		return nullptr;
+
+	return DoorComponent->GetRoomB();
+}
+
+void ADoor::DispatchDoorLock(UDoorComponent* Component, bool IsLocked)
+{
+	if (IsLocked)
+	{
+		OnDoorLock();
+		OnDoorLock_BP();
+	}
+	else
+	{
+		OnDoorUnlock();
+		OnDoorUnlock_BP();
+	}
+}
+
+void ADoor::DispatchDoorOpen(UDoorComponent* Component, bool IsOpened)
+{
+	if (IsOpened)
+	{
+		OnDoorOpen();
+		OnDoorOpen_BP();
+	}
+	else
+	{
+		OnDoorClose();
+		OnDoorClose_BP();
+	}
+}
+
+bool ADoor::GetAlwaysVisible() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->IsAlwaysVisible();
+}
+
+bool ADoor::GetAlwaysUnlocked() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->IsAlwaysUnlocked();
+}
+
+void ADoor::SetAlwaysVisible(bool bInAlwaysVisible)
+{
+	if (!IsValid(DoorComponent))
+		return;
+
+	DoorComponent->SetAlwaysVisible(bInAlwaysVisible);
+}
+
+void ADoor::SetAlwaysUnlocked(bool bInAlwaysUnlocked)
+{
+	if (!IsValid(DoorComponent))
+		return;
+
+	DoorComponent->SetAlwaysUnlocked(bInAlwaysUnlocked);
 }

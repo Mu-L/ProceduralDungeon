@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-04-02
+
+### Added
+
+- Added the `Door Interface` to be implemented on an actor or an actor component.
+- Added a `Door Component` to add door logic and events on any actor (already implements `Door Interface`).
+- Added `Dungeon` input to the `Room Constraint`'s `Check` function.
+- Added a `Count Limit` built-in constraint, to limit the number of the room data generated in the dungeon.
+
+### Changed
+
+- Now, multiple bounding boxes can be defined for a room, allowing more freedom and creativity in your room design.
+  - You can add or remove boxes directly from the array in the `Room Data` asset.
+  - Edit them with the Dungeon Room editor mode.
+- `Door` actors now uses the new `Door Component` for their logic.
+- The doors' `Open`/`Lock` states are moved from the actors to the `Room Connection`, allowing you to lock or open individual doors earlier (e.g. during the `Initialize Dungeon` event).
+
+### Fixed
+
+- Fixed Linux compilation error
+
+### Deprecated
+
+- Deprecating `Door` actors as their logic has been moved into the `Door Component`. The `Door` actor class will be removed in a future version of the plugin.  
+    To convert your existing doors, reparent them to the `Actor` class (or any other actor class you want) and add the `Door Component` on them. Then, bind to the events (like `On Open`, `On Lock`, etc.) to the component events instead.
+- Deprecating `First Point` and `Second Point` variables of `Room Data` as they are superseded by the array `Bounding Boxes`. They will be removed in a future version of the plugin.  
+    Conversion is automatically done on asset load, but to make it permanent and avoiding data loss when they will be removed from the plugin, you'll need to resave your assets after updating the plugin.
+
 ## [3.7.1] - 2026-02-04
 
 ### Fixed
@@ -450,6 +478,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Release
 
+[3.7.1]: https://github.com/BenPyton/ProceduralDungeon/compare/v3.7.1...v3.8.0
 [3.7.1]: https://github.com/BenPyton/ProceduralDungeon/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/BenPyton/ProceduralDungeon/compare/v3.6.4...v3.7.0
 [3.6.4]: https://github.com/BenPyton/ProceduralDungeon/compare/v3.6.3...v3.6.4

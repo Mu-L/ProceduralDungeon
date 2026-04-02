@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -23,7 +23,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FRelevancyEvent, URoom*, Room, AP
 
 class ADungeonGeneratorBase;
 class ARoomLevel;
-class ADoor;
 class URoomCustomData;
 class ULevelStreamingDynamic;
 
@@ -158,12 +157,12 @@ public:
 	// @param DoorIndex The index of the door to retrieve.
 	// @return The door actor at the index, or null if the index is out of range.
 	UFUNCTION(BlueprintCallable, Category = "Room")
-	ADoor* GetDoor(int32 DoorIndex) const;
+	AActor* GetDoor(int32 DoorIndex) const;
 
 	// Fill an array with all the door actors connected to the room.
 	// @param OutDoors THIS IS NOT AN INPUT! This array will be emptied and then filled with the door actors. This is your result!
 	UFUNCTION(BlueprintPure = false, Category = "Room")
-	void GetAllDoors(UPARAM(ref) TArray<ADoor*>& OutDoors) const;
+	void GetAllDoors(UPARAM(ref) TArray<AActor*>& OutDoors) const;
 
 	// Returns true if the door at DoorIndex is connected to another room.
 	// @param DoorIndex The index of the door to check.
@@ -186,7 +185,11 @@ public:
 	// Returns the door actor shared with the provided room.
 	// Returns null if the provided room is not connected with this.
 	UFUNCTION(BlueprintPure, Category = "Room")
-	void GetDoorsWith(const URoom* OtherRoom, TArray<ADoor*>& Doors) const;
+	void GetDoorsWith(const URoom* OtherRoom, TArray<AActor*>& Doors) const;
+
+	// Returns all the connections of this room.
+	UFUNCTION(BlueprintPure, Category = "Room")
+	TArray<URoomConnection*> GetConnections() const;
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Room|Events")
@@ -270,6 +273,7 @@ public:
 	TWeakObjectPtr<URoom> GetConnectedRoom(int32 DoorIndex) const;
 	int32 GetFirstEmptyConnection() const;
 	void GetAllEmptyConnections(TArray<int32>& EmptyConnections) const;
+	const TArray<TWeakObjectPtr<URoomConnection>>& GetAllConnections() const { return Connections; } 
 
 	bool IsDoorIndexValid(int32 DoorIndex) const;
 	int32 GetDoorIndexAt(FIntVector WorldPos, EDoorDirection WorldRot) const;
@@ -300,15 +304,11 @@ public:
 
 	FTransform GetTransform() const;
 	FBoxCenterAndExtent GetBounds() const;
+	int32 GetSubBoundsCount() const;
+	FBoxCenterAndExtent GetSubBounds(int32 Index) const;
 	FBoxCenterAndExtent GetLocalBounds() const;
 	FBoxMinAndMax GetIntBounds() const;
 	FVoxelBounds GetVoxelBounds() const;
-
-	// AABB Overlapping
-	static bool Overlap(const URoom& A, const URoom& B);
-	static bool Overlap(const URoom& Room, const TArray<URoom*>& RoomList);
-
-	static URoom* GetRoomAt(FIntVector RoomCell, const TArray<URoom*>& RoomList);
 
 private:
 	// Utility functions to load/unload level instances

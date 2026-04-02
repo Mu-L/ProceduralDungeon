@@ -1,4 +1,4 @@
-// Copyright Benoit Pelletier 2019 - 2025 All Rights Reserved.
+// Copyright Benoit Pelletier 2019 - 2026 All Rights Reserved.
 //
 // This software is available under different licenses depending on the source from which it was obtained:
 // - The Fab EULA (https://fab.com/eula) applies when obtained from the Fab marketplace.
@@ -9,11 +9,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ProceduralDungeonTypes.h"
 #include "Door.generated.h"
 
-class URoom;
 class UDoorType;
+class UDoorComponent;
 
 // Base class for all door actors in the dungeon.
 // Use this class even if you want to create a wall to place instead of a door (when the door is not connected to another room for example).
@@ -25,70 +24,76 @@ class PROCEDURALDUNGEON_API ADoor : public AActor
 public:
 	ADoor();
 
-public:
-	virtual void Tick(float DeltaTime) override;
-	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+	//~ Begin AActor interface
+	virtual void PostInitializeComponents() override;
+	//~ End AActor interface
 
 public:
-	void SetConnectingRooms(URoom* RoomA, URoom* RoomB);
+	UDoorComponent* GetDoorComponent() const { return DoorComponent; }
 
-	UFUNCTION(BlueprintPure, Category = "Door", meta = (CompactNodeTitle = "Is Locked"))
-	FORCEINLINE bool IsLocked() const { return bLocked; }
-	UFUNCTION(BlueprintPure, Category = "Door", meta = (CompactNodeTitle = "Is Open"))
-	FORCEINLINE bool IsOpen() const { return bIsOpen; }
+	UFUNCTION(BlueprintPure, Category = "Door", meta = (CompactNodeTitle = "Is Locked", DeprecatedFunction, DeprecationMessage = "Use DoorComponent->IsLocked instead."))
+	bool IsLocked() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
+	UFUNCTION(BlueprintPure, Category = "Door", meta = (CompactNodeTitle = "Is Open", DeprecatedFunction, DeprecationMessage = "Use DoorComponent->IsOpen instead."))
+	bool IsOpen() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door", meta = (DeprecatedFunction, DeprecationMessage = "Use DoorComponent->Open instead."))
 	void Open(bool open);
 
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door", meta = (DeprecatedFunction, DeprecationMessage = "Use DoorComponent->Lock instead."))
 	void Lock(bool lock);
 
-	const UDoorType* GetDoorType() const { return Type; }
+	bool ShouldBeOpened() const;
+	bool ShouldBeLocked() const;
 
-	bool ShouldBeOpened() const { return bShouldBeOpen; }
-	bool ShouldBeLocked() const { return bShouldBeLocked; }
+	const UDoorType* GetDoorType() const;
+
+	UFUNCTION(BlueprintGetter)
+	URoom* GetRoomA() const;
+
+	UFUNCTION(BlueprintGetter)
+	URoom* GetRoomB() const;
+
+	// Used only to migrate from old save games. Must not be used anywhere else than the URoomConnection.
+	bool GetLegacyShouldBeLocked() const { return bShouldBeLocked; }
+	bool GetLegacyShouldBeOpen() const { return bShouldBeOpen; }
+	bool GetLegacyAlwaysVisible() const { return bAlwaysVisible; }
+	bool GetLegacyAlwaysUnlocked() const { return bAlwaysUnlocked; }
 
 protected:
 	UFUNCTION()
 	virtual void OnDoorLock() {}
-	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Locked"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Locked", DeprecatedFunction, DeprecationMessage = "Bind to DoorComponent->OnDoorLocked(true) instead."))
 	void OnDoorLock_BP();
 
 	UFUNCTION()
 	virtual void OnDoorUnlock() {}
-	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Unlocked"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Unlocked", DeprecatedFunction, DeprecationMessage = "Bind to DoorComponent->OnDoorLocked(false) instead."))
 	void OnDoorUnlock_BP();
 
 	UFUNCTION()
 	virtual void OnDoorOpen() {}
-	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Open"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Open", DeprecatedFunction, DeprecationMessage = "Bind to DoorComponent->OnDoorOpened(true) instead."))
 	void OnDoorOpen_BP();
 
 	UFUNCTION()
 	virtual void OnDoorClose() {}
-	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Close"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Door", meta = (DisplayName = "On Close", DeprecatedFunction, DeprecationMessage = "Bind to DoorComponent->OnDoorOpened(false) instead."))
 	void OnDoorClose_BP();
 
+	UFUNCTION()
+	void DispatchDoorLock(UDoorComponent* Component, bool IsLocked);
+
+	UFUNCTION()
+	void DispatchDoorOpen(UDoorComponent* Component, bool IsOpened);
+
 protected:
-	bool bLocked {false};
-	bool bIsOpen {false};
-
-	UPROPERTY(Replicated, SaveGame)
-	bool bShouldBeLocked {false};
-
-	UPROPERTY(Replicated, SaveGame)
-	bool bShouldBeOpen {false};
-
-	// The two connected rooms to this door
-	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Door")
-	URoom* RoomA {nullptr};
-	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Door")
-	URoom* RoomB {nullptr};
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Door", meta = (DisplayName = "Always Visible"))
+	// DEPRECATED: Ghost property for retro-compatibility with older plugin versions.
+	UPROPERTY(BlueprintGetter = GetAlwaysVisible, BlueprintSetter = SetAlwaysVisible, SaveGame, Category = "Door", meta = (DisplayName = "Always Visible", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->AlwaysVisible instead."))
 	bool bAlwaysVisible {false};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Door", meta = (DisplayName = "Always Unlocked"))
+	// DEPRECATED: Ghost property for retro-compatibility with older plugin versions.
+	UPROPERTY(BlueprintGetter = GetAlwaysUnlocked, BlueprintSetter = SetAlwaysUnlocked, SaveGame, Category = "Door", meta = (DisplayName = "Always Unlocked", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->AlwaysUnlocked instead."))
 	bool bAlwaysUnlocked {false};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Door", meta = (DisplayName = "Door Type"))
@@ -96,4 +101,35 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Door")
 	USceneComponent* DefaultSceneComponent {nullptr};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
+	UDoorComponent* DoorComponent {nullptr};
+
+private:
+	UFUNCTION(BlueprintGetter)
+	bool GetAlwaysVisible() const;
+
+	UFUNCTION(BlueprintGetter)
+	bool GetAlwaysUnlocked() const;
+
+	UFUNCTION(BlueprintSetter)
+	void SetAlwaysVisible(bool bInAlwaysVisible);
+
+	UFUNCTION(BlueprintSetter)
+	void SetAlwaysUnlocked(bool bInAlwaysUnlocked);
+
+private:
+	// Ghost properties for retro-compatibility. Redirect to the DoorComponent->RoomA/B internally.
+	UPROPERTY(BlueprintGetter = GetRoomA, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomConnection->GetRoomA instead."))
+	URoom* RoomA {nullptr};
+	UPROPERTY(BlueprintGetter = GetRoomB, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomConnection->GetRoomB instead."))
+	URoom* RoomB {nullptr};
+
+	// DEPRECATED: Ghost property for retro-compatibility with older save games.
+	UPROPERTY(SaveGame, meta = (AllowPrivateAccess = true))
+	bool bShouldBeLocked {false};
+
+	// DEPRECATED: Ghost property for retro-compatibility with older save games.
+	UPROPERTY(SaveGame, meta = (AllowPrivateAccess = true))
+	bool bShouldBeOpen {false};
 };
