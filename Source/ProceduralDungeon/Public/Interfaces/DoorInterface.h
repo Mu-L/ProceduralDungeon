@@ -12,7 +12,7 @@
 #include "DoorInterface.generated.h"
 
 class UDoorType;
-class URoom;
+class URoomConnection;
 
 UINTERFACE(MinimalAPI, Blueprintable, BlueprintType)
 class UDoorInterface : public UInterface
@@ -32,5 +32,5 @@ public:
 	const UDoorType* GetDoorType() const;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Door Interface")
-	void SetConnectingRooms(URoom* RoomA, URoom* RoomB);
+	void SetRoomConnection(URoomConnection* RoomConnection);
 };

@@ -8,6 +8,7 @@
 #include "Components/DoorComponent.h"
 #include "Room.h"
 #include "RoomLevel.h"
+#include "RoomConnection.h"
 #include "DrawDebugHelpers.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/Engine.h"
@@ -30,16 +31,16 @@ void UDoorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	FDoRepLifetimeParams Params;
 	Params.bIsPushBased = true;
-	DOREPLIFETIME_WITH_PARAMS(UDoorComponent, bShouldBeLocked, Params);
-	DOREPLIFETIME_WITH_PARAMS(UDoorComponent, bShouldBeOpen, Params);
-	DOREPLIFETIME_WITH_PARAMS(UDoorComponent, RoomA, Params);
-	DOREPLIFETIME_WITH_PARAMS(UDoorComponent, RoomB, Params);
+	DOREPLIFETIME_WITH_PARAMS(UDoorComponent, RoomConnection, Params);
 }
 
 // Called every frame
 void UDoorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	const URoom* RoomA = GetRoomA();
+	const URoom* RoomB = GetRoomB();
 
 	// Tells if the door actor has been spawned by the dungeon generator or not.
 	// At least one of the room is valid when spawned by the dungeon generator.
@@ -81,7 +82,7 @@ void UDoorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	const bool bPrevLocked = bLocked;
 	const bool bRoomALocked = !IsValid(RoomA) || RoomA->IsLocked();
 	const bool bRoomBLocked = !IsValid(RoomB) || RoomB->IsLocked();
-	bLocked = !bAlwaysUnlocked && (bShouldBeLocked || (bSpawnedByDungeon && (bRoomALocked || bRoomBLocked)));
+	bLocked = !bAlwaysUnlocked && (ShouldBeLocked() || (bSpawnedByDungeon && (bRoomALocked || bRoomBLocked)));
 
 	if (bLocked != bPrevLocked)
 	{
@@ -93,7 +94,7 @@ void UDoorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 
 	// Update door's open state
 	const bool bPrevIsOpen = bIsOpen;
-	bIsOpen = bShouldBeOpen && !bLocked;
+	bIsOpen = ShouldBeOpen() && !bLocked;
 	if (bIsOpen != bPrevIsOpen)
 	{
 		DungeonLog_Debug("Door %s open: %d", *GetNameSafe(this), bIsOpen);
@@ -114,11 +115,10 @@ void UDoorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 #endif // ENABLE_DRAW_DEBUG
 }
 
-void UDoorComponent::SetConnectingRooms_Implementation(URoom* _RoomA, URoom* _RoomB)
+void UDoorComponent::SetRoomConnection_Implementation(URoomConnection* InRoomConnection)
 {
 	check(OwnerHasAuthority());
-	SET_COMPONENT_REPLICATED_PROPERTY_VALUE(RoomA, _RoomA);
-	SET_COMPONENT_REPLICATED_PROPERTY_VALUE(RoomB, _RoomB);
+	SET_COMPONENT_REPLICATED_PROPERTY_VALUE(RoomConnection, InRoomConnection);
 }
 
 void UDoorComponent::Open(bool bOpen)
@@ -126,7 +126,10 @@ void UDoorComponent::Open(bool bOpen)
 	if (!OwnerHasAuthority())
 		return;
 
-	SET_COMPONENT_REPLICATED_PROPERTY_VALUE(bShouldBeOpen, bOpen);
+	if (!IsValid(RoomConnection))
+		return;
+
+	RoomConnection->SetDoorOpen(bOpen);
 }
 
 void UDoorComponent::Lock(bool bLock)
@@ -134,7 +137,42 @@ void UDoorComponent::Lock(bool bLock)
 	if (!OwnerHasAuthority())
 		return;
 
-	SET_COMPONENT_REPLICATED_PROPERTY_VALUE(bShouldBeLocked, bLock)
+	if (!IsValid(RoomConnection))
+		return;
+
+	RoomConnection->SetDoorLocked(bLock);
+}
+
+bool UDoorComponent::ShouldBeOpen() const
+{
+	if (!IsValid(RoomConnection))
+		return false;
+
+	return RoomConnection->IsDoorOpen();
+}
+
+bool UDoorComponent::ShouldBeLocked() const
+{
+	if (!IsValid(RoomConnection))
+		return false;
+
+	return RoomConnection->IsDoorLocked();
+}
+
+URoom* UDoorComponent::GetRoomA() const
+{
+	if (!IsValid(RoomConnection))
+		return nullptr;
+
+	return RoomConnection->GetRoomA().Get();
+}
+
+URoom* UDoorComponent::GetRoomB() const
+{
+	if (!IsValid(RoomConnection))
+		return nullptr;
+
+	return RoomConnection->GetRoomB().Get();
 }
 
 bool UDoorComponent::OwnerHasAuthority() const

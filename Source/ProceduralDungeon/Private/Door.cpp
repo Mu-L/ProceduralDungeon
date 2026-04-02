@@ -72,7 +72,7 @@ bool ADoor::ShouldBeOpened() const
 	if (!IsValid(DoorComponent))
 		return false;
 
-	return DoorComponent->ShouldBeOpened();
+	return DoorComponent->ShouldBeOpen();
 }
 
 bool ADoor::ShouldBeLocked() const

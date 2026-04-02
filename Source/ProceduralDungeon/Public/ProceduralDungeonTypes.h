@@ -220,3 +220,17 @@ public:
 public:
 	static FRoomCandidate Invalid;
 };
+
+USTRUCT()
+struct FDoorState
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(SaveGame)
+	bool bIsLocked {false};
+
+	UPROPERTY(SaveGame)
+	bool bIsOpen {false};
+};
+	

@@ -17,6 +17,7 @@
 #include "Interfaces/DoorInterface.h"
 #include "Utils/DungeonSaveUtils.h"
 #include "DungeonGeneratorBase.h"
+#include "ProceduralDungeonCustomVersion.h"
 
 void URoomConnection::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -32,12 +33,14 @@ void URoomConnection::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_WITH_PARAMS(URoomConnection, RoomB, Params);
 	DOREPLIFETIME_WITH_PARAMS(URoomConnection, RoomBDoorId, Params);
 	DOREPLIFETIME_WITH_PARAMS(URoomConnection, DoorInstance, Params);
+	DOREPLIFETIME_WITH_PARAMS(URoomConnection, DoorState, Params);
 }
 
 bool URoomConnection::SerializeObject(FStructuredArchive::FRecord& Record, bool bIsLoading)
 {
 	check(!SaveData.IsValid());
 	SaveData = MakeUnique<FSaveData>();
+	SaveData->Version = Record.GetUnderlyingArchive().CustomVer(FProceduralDungeonCustomVersion::GUID);
 
 	if (!bIsLoading)
 	{
@@ -224,6 +227,28 @@ FRotator URoomConnection::GetDoorRotation(bool bIgnoreGeneratorTransform) const
 	return Rotation.Rotator();
 }
 
+bool URoomConnection::IsDoorOpen() const
+{
+	return DoorState.bIsOpen;
+}
+
+bool URoomConnection::IsDoorLocked() const
+{
+	return DoorState.bIsLocked;
+}
+
+void URoomConnection::SetDoorOpen(bool bOpen)
+{
+	DoorState.bIsOpen = bOpen;
+	MARK_PROPERTY_DIRTY_FROM_NAME(URoomConnection, DoorState, this);
+}
+
+void URoomConnection::SetDoorLocked(bool bLocked)
+{
+	DoorState.bIsLocked = bLocked;
+	MARK_PROPERTY_DIRTY_FROM_NAME(URoomConnection, DoorState, this);
+}
+
 void URoomConnection::SetDoorClass(TSubclassOf<AActor> InDoorClass, bool bInFlipped)
 {
 	DoorClass = InDoorClass;
@@ -281,7 +306,7 @@ AActor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUse
 
 	UObject* Implementer = ActorUtils::GetInterfaceImplementer<UDoorInterface>(Door);
 	if (IsValid(Implementer))
-		IDoorInterface::Execute_SetConnectingRooms(Implementer, RoomA.Get(), RoomB.Get());
+		IDoorInterface::Execute_SetRoomConnection(Implementer, this);
 
 	DoorInstance = Door;
 
@@ -289,7 +314,17 @@ AActor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUse
 	{
 		// Load door data back if we have some saved data.
 		SerializeUObject(SaveData->DoorSavedData, Door, true);
-		DungeonLog_Info("Loaded saved data for door '%s'", *GetNameSafe(Door));
+		DungeonLog_InfoSilent("Loaded saved data for door '%s'", *GetNameSafe(Door));
+
+		if (SaveData->Version < FProceduralDungeonCustomVersion::DoorStateMovedToRoomConnection)
+		{
+			if (ADoor* LegacyDoorActor = Cast<ADoor>(Door))
+			{
+				DoorState.bIsOpen = LegacyDoorActor->GetLegacyShouldBeOpen();
+				DoorState.bIsLocked = LegacyDoorActor->GetLegacyShouldBeLocked();
+				DungeonLog_InfoSilent("Migrated from old door actor '%s': Open:%d | Locked:%d", *GetNameSafe(LegacyDoorActor), DoorState.bIsOpen, DoorState.bIsLocked);
+			}
+		}
 	}
 
 	return Door;
@@ -317,6 +352,11 @@ void URoomConnection::OnRep_RoomA()
 void URoomConnection::OnRep_RoomB()
 {
 	DungeonLog_Debug("[%s] RoomConnection '%s' RoomB replicated: %s", *GetAuthorityName(), *GetNameSafe(this), *GetNameSafe(RoomB.Get()));
+}
+
+void URoomConnection::OnRep_DoorState()
+{
+	DungeonLog_Debug("[%s] RoomConnection '%s' DoorState replicated: Open:%d | Locked:%d", *GetAuthorityName(), *GetNameSafe(this), DoorState.bIsOpen, DoorState.bIsLocked);
 }
 
 URoom* URoomConnection::GetOtherRoom(const URoomConnection* Conn, const URoom* FromRoom)

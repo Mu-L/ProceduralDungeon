@@ -19,6 +19,7 @@ struct FProceduralDungeonCustomVersion
 		InitialVersion = 0,
 		SoftObjectPtrFix, // Fixed issues with SoftObjectPtr replication in Room.h
 		RoomDataBoundingBoxesMigration, // Migrated FirstPoint/SecondPoint to BoundingBoxes in RoomData.h
+		DoorStateMovedToRoomConnection, // Migrated the ADoor's Open/Lock states to the FDoorState in URoomConnection
 
 		// -----<new versions can be added above this line>-------------------------------------------------
 		VersionPlusOne,

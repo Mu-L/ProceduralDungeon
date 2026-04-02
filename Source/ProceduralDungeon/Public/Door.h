@@ -54,6 +54,10 @@ public:
 	UFUNCTION(BlueprintGetter)
 	URoom* GetRoomB() const;
 
+	// Used only to migrate from old save games. Must not be used anywhere else than the URoomConnection.
+	bool GetLegacyShouldBeLocked() const { return bShouldBeLocked; }
+	bool GetLegacyShouldBeOpen() const { return bShouldBeOpen; }
+
 protected:
 	UFUNCTION()
 	virtual void OnDoorLock() {}
@@ -99,8 +103,16 @@ protected:
 
 private:
 	// Ghost properties for retro-compatibility. Redirect to the DoorComponent->RoomA/B internally.
-	UPROPERTY(BlueprintGetter = GetRoomA, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomA instead."))
+	UPROPERTY(BlueprintGetter = GetRoomA, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomConnection->GetRoomA instead."))
 	URoom* RoomA {nullptr};
-	UPROPERTY(BlueprintGetter = GetRoomB, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomB instead."))
+	UPROPERTY(BlueprintGetter = GetRoomB, Category = "Door", meta = (AllowPrivateAccess = true, DeprecatedProperty, DeprecationMessage = "Use DoorComponent->RoomConnection->GetRoomB instead."))
 	URoom* RoomB {nullptr};
+
+	// DEPRECATED: Ghost property for retro-compatibility with older save games.
+	UPROPERTY(SaveGame, meta = (AllowPrivateAccess = true))
+	bool bShouldBeLocked {false};
+
+	// DEPRECATED: Ghost property for retro-compatibility with older save games.
+	UPROPERTY(SaveGame, meta = (AllowPrivateAccess = true))
+	bool bShouldBeOpen {false};
 };

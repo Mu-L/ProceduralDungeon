@@ -16,6 +16,7 @@
 class URoom;
 class UDoorType;
 class UDoorComponent;
+class URoomConnection;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDoorComponentLockedDelegate, UDoorComponent*, Component, bool, IsLocked);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDoorComponentOpenedDelegate, UDoorComponent*, Component, bool, IsOpened);
@@ -37,7 +38,7 @@ public:
 
 	//~ Begin IDoorInterface interface
 	virtual const UDoorType* GetDoorType_Implementation() const override { return Type; }
-	virtual void SetConnectingRooms_Implementation(URoom* RoomA, URoom* RoomB) override;
+	virtual void SetRoomConnection_Implementation(URoomConnection* RoomConnection) override;
 	//~ End IDoorInterface interface
 
 public:
@@ -54,11 +55,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
 	void Lock(bool lock);
 
-	bool ShouldBeOpened() const { return bShouldBeOpen; }
-	bool ShouldBeLocked() const { return bShouldBeLocked; }
+	bool ShouldBeOpen() const;
+	bool ShouldBeLocked() const;
 
-	URoom* GetRoomA() const { return RoomA; }
-	URoom* GetRoomB() const { return RoomB; }
+	URoom* GetRoomA() const;
+	URoom* GetRoomB() const;
+	URoomConnection* GetRoomConnection() const { return RoomConnection; }
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Door")
@@ -82,17 +84,8 @@ protected:
 	bool bLocked {false};
 	bool bIsOpen {false};
 
-	UPROPERTY(Replicated, SaveGame)
-	bool bShouldBeLocked {false};
-
-	UPROPERTY(Replicated, SaveGame)
-	bool bShouldBeOpen {false};
-
-	// The two connected rooms to this door
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Door")
-	URoom* RoomA {nullptr};
-	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Door")
-	URoom* RoomB {nullptr};
+	URoomConnection* RoomConnection {nullptr};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Door", meta = (DisplayName = "Always Visible"))
 	bool bAlwaysVisible {false};

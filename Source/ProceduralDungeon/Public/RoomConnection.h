@@ -60,6 +60,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Room Connection")
 	FRotator GetDoorRotation(bool bIgnoreGeneratorTransform) const;
 
+	UFUNCTION(BlueprintPure, Category = "Room Connection")
+	bool IsDoorOpen() const;
+
+	UFUNCTION(BlueprintPure, Category = "Room Connection")
+	bool IsDoorLocked() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Room Connection")
+	void SetDoorOpen(bool bOpen);
+
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Room Connection")
+	void SetDoorLocked(bool bLocked);
+
 	void SetDoorClass(TSubclassOf<AActor> DoorClass, bool bFlipped);
 	AActor* InstantiateDoor(UWorld* World, AActor* Owner = nullptr, bool bUseOwnerTransform = false);
 	void DestroyDoor();
@@ -90,6 +102,9 @@ private:
 	UFUNCTION()
 	void OnRep_RoomB();
 
+	UFUNCTION()
+	void OnRep_DoorState();
+
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_ID, SaveGame)
 	int32 ID {-1};
@@ -115,10 +130,14 @@ private:
 	UPROPERTY(Replicated, Transient)
 	TWeakObjectPtr<AActor> DoorInstance {nullptr};
 
+	UPROPERTY(ReplicatedUsing = OnRep_DoorState, SaveGame)
+	FDoorState DoorState;
+
 private:
 	// Store temporary data used only during saving/loading the game
 	struct FSaveData
 	{
+		int32 Version {-1};
 		int64 RoomAID {-1};
 		int64 RoomBID {-1};
 		TArray<uint8> DoorSavedData;

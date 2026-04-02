@@ -553,24 +553,37 @@ bool BFS_Cycle(TQueue<const URoom*>& Queue, TSet<const URoom*>& MarkedThis, cons
 	const URoom* Next = nullptr;
 
 	Queue.Dequeue(Current);
-	// for each neighbor, if not locked or marked, add it to queue and mark it
-	for (int i = 0; OutCommon == nullptr && i < Current->GetConnectionCount(); ++i)
-	{
-		Next = Current->GetConnectedRoom(i).Get();
-		if (Next && (IgnoreLocked || !Next->IsLocked()) && !MarkedThis.Contains(Next))
-		{
-			ParentMap.Add(Next, Current);
 
-			// Check intersection with other side
-			if (MarkedOther.Contains(Next))
-			{
-				OutCommon = Next;
-			}
-			else
-			{
-				Queue.Enqueue(Next);
-				MarkedThis.Add(Next);
-			}
+	for (const auto& Conn : Current->GetAllConnections())
+	{
+		if (!Conn.IsValid())
+			continue;
+
+		if (!IgnoreLocked && Conn->IsDoorLocked())
+			continue;
+
+		Next = Conn->GetOtherRoom(Current).Get();
+		if (!IsValid(Next))
+			continue;
+
+		if (!IgnoreLocked && Next->IsLocked())
+			continue;
+
+		if (MarkedThis.Contains(Next))
+			continue;
+
+		ParentMap.Add(Next, Current);
+
+		// Check intersection with other side
+		if (MarkedOther.Contains(Next))
+		{
+			OutCommon = Next;
+			break;
+		}
+		else
+		{
+			Queue.Enqueue(Next);
+			MarkedThis.Add(Next);
 		}
 	}
 

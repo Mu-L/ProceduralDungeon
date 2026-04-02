@@ -187,6 +187,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Room")
 	void GetDoorsWith(const URoom* OtherRoom, TArray<AActor*>& Doors) const;
 
+	// Returns all the connections of this room.
+	UFUNCTION(BlueprintPure, Category = "Room")
+	TArray<URoomConnection*> GetConnections() const;
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Room|Events")
 	FRelevancyEvent OnRelevancyChanged;
@@ -269,6 +273,7 @@ public:
 	TWeakObjectPtr<URoom> GetConnectedRoom(int32 DoorIndex) const;
 	int32 GetFirstEmptyConnection() const;
 	void GetAllEmptyConnections(TArray<int32>& EmptyConnections) const;
+	const TArray<TWeakObjectPtr<URoomConnection>>& GetAllConnections() const { return Connections; } 
 
 	bool IsDoorIndexValid(int32 DoorIndex) const;
 	int32 GetDoorIndexAt(FIntVector WorldPos, EDoorDirection WorldRot) const;

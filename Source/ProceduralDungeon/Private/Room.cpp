@@ -773,6 +773,17 @@ void URoom::GetDoorsWith(const URoom* OtherRoom, TArray<AActor*>& Doors) const
 	}
 }
 
+TArray<URoomConnection*> URoom::GetConnections() const
+{
+	TArray<URoomConnection*> ValidConnections;
+	for (const auto& Connection : Connections)
+	{
+		if (Connection.IsValid())
+			ValidConnections.Add(Connection.Get());
+	}
+	return ValidConnections;
+}
+
 FVector URoom::GetBoundsCenter() const
 {
 	FVector Center = GetBounds().Center;
