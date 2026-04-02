@@ -134,3 +134,35 @@ void ADoor::DispatchDoorOpen(UDoorComponent* Component, bool IsOpened)
 		OnDoorClose_BP();
 	}
 }
+
+bool ADoor::GetAlwaysVisible() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->IsAlwaysVisible();
+}
+
+bool ADoor::GetAlwaysUnlocked() const
+{
+	if (!IsValid(DoorComponent))
+		return false;
+
+	return DoorComponent->IsAlwaysUnlocked();
+}
+
+void ADoor::SetAlwaysVisible(bool bInAlwaysVisible)
+{
+	if (!IsValid(DoorComponent))
+		return;
+
+	DoorComponent->SetAlwaysVisible(bInAlwaysVisible);
+}
+
+void ADoor::SetAlwaysUnlocked(bool bInAlwaysUnlocked)
+{
+	if (!IsValid(DoorComponent))
+		return;
+
+	DoorComponent->SetAlwaysUnlocked(bInAlwaysUnlocked);
+}

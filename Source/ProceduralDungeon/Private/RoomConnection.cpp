@@ -18,6 +18,7 @@
 #include "Utils/DungeonSaveUtils.h"
 #include "DungeonGeneratorBase.h"
 #include "ProceduralDungeonCustomVersion.h"
+#include "Components/DoorComponent.h"
 
 void URoomConnection::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -316,12 +317,23 @@ AActor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUse
 		SerializeUObject(SaveData->DoorSavedData, Door, true);
 		DungeonLog_InfoSilent("Loaded saved data for door '%s'", *GetNameSafe(Door));
 
-		if (SaveData->Version < FProceduralDungeonCustomVersion::DoorStateMovedToRoomConnection)
+		if (SaveData->Version < FProceduralDungeonCustomVersion::DoorLogicRefactored)
 		{
 			if (ADoor* LegacyDoorActor = Cast<ADoor>(Door))
 			{
 				DoorState.bIsOpen = LegacyDoorActor->GetLegacyShouldBeOpen();
 				DoorState.bIsLocked = LegacyDoorActor->GetLegacyShouldBeLocked();
+
+				if (UDoorComponent* Component = LegacyDoorActor->GetComponentByClass<UDoorComponent>())
+				{
+					Component->SetAlwaysVisible(LegacyDoorActor->GetLegacyAlwaysVisible());
+					Component->SetAlwaysUnlocked(LegacyDoorActor->GetLegacyAlwaysUnlocked());
+				}
+				else
+				{
+					DungeonLog_WarningSilent("Legacy door actor '%s' does not have a DoorComponent, can't migrate its AlwaysVisible and AlwaysUnlocked properties.", *GetNameSafe(LegacyDoorActor));
+				}
+
 				DungeonLog_InfoSilent("Migrated from old door actor '%s': Open:%d | Locked:%d", *GetNameSafe(LegacyDoorActor), DoorState.bIsOpen, DoorState.bIsLocked);
 			}
 		}

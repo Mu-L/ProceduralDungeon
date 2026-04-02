@@ -57,6 +57,8 @@ public:
 	// Used only to migrate from old save games. Must not be used anywhere else than the URoomConnection.
 	bool GetLegacyShouldBeLocked() const { return bShouldBeLocked; }
 	bool GetLegacyShouldBeOpen() const { return bShouldBeOpen; }
+	bool GetLegacyAlwaysVisible() const { return bAlwaysVisible; }
+	bool GetLegacyAlwaysUnlocked() const { return bAlwaysUnlocked; }
 
 protected:
 	UFUNCTION()
@@ -86,10 +88,12 @@ protected:
 	void DispatchDoorOpen(UDoorComponent* Component, bool IsOpened);
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Door", meta = (DisplayName = "Always Visible"))
+	// DEPRECATED: Ghost property for retro-compatibility with older plugin versions.
+	UPROPERTY(BlueprintGetter = GetAlwaysVisible, BlueprintSetter = SetAlwaysVisible, SaveGame, Category = "Door", meta = (DisplayName = "Always Visible", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->AlwaysVisible instead."))
 	bool bAlwaysVisible {false};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Door", meta = (DisplayName = "Always Unlocked"))
+	// DEPRECATED: Ghost property for retro-compatibility with older plugin versions.
+	UPROPERTY(BlueprintGetter = GetAlwaysUnlocked, BlueprintSetter = SetAlwaysUnlocked, SaveGame, Category = "Door", meta = (DisplayName = "Always Unlocked", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->AlwaysUnlocked instead."))
 	bool bAlwaysUnlocked {false};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Door", meta = (DisplayName = "Door Type"))
@@ -100,6 +104,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
 	UDoorComponent* DoorComponent {nullptr};
+
+private:
+	UFUNCTION(BlueprintGetter)
+	bool GetAlwaysVisible() const;
+
+	UFUNCTION(BlueprintGetter)
+	bool GetAlwaysUnlocked() const;
+
+	UFUNCTION(BlueprintSetter)
+	void SetAlwaysVisible(bool bInAlwaysVisible);
+
+	UFUNCTION(BlueprintSetter)
+	void SetAlwaysUnlocked(bool bInAlwaysUnlocked);
 
 private:
 	// Ghost properties for retro-compatibility. Redirect to the DoorComponent->RoomA/B internally.

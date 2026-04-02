@@ -50,10 +50,10 @@ public:
 	FORCEINLINE bool IsOpen() const { return bIsOpen; }
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
-	void Open(bool open);
+	void Open(bool bOpen);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Door")
-	void Lock(bool lock);
+	void Lock(bool bLock);
 
 	bool ShouldBeOpen() const;
 	bool ShouldBeLocked() const;
@@ -61,6 +61,11 @@ public:
 	URoom* GetRoomA() const;
 	URoom* GetRoomB() const;
 	URoomConnection* GetRoomConnection() const { return RoomConnection; }
+
+	bool IsAlwaysVisible() const { return bAlwaysVisible; }
+	bool IsAlwaysUnlocked() const { return bAlwaysUnlocked; }
+	void SetAlwaysVisible(bool bInAlwaysVisible) { bAlwaysVisible = bInAlwaysVisible; }
+	void SetAlwaysUnlocked(bool bInAlwaysUnlocked) { bAlwaysUnlocked = bInAlwaysUnlocked; }
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Door")
