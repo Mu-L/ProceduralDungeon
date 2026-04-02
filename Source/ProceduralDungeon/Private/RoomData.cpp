@@ -16,6 +16,7 @@
 #include "DungeonSettings.h"
 #include "RoomConstraints/RoomConstraint.h"
 #include "Serialization/CustomVersion.h"
+#include "DrawDebugHelpers.h"
 
 #if !USE_LEGACY_DATA_VALIDATION
 	#include "Misc/DataValidation.h"
