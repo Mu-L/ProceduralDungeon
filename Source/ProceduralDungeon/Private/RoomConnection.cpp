@@ -328,6 +328,7 @@ AActor* URoomConnection::InstantiateDoor(UWorld* World, AActor* Owner, bool bUse
 				{
 					Component->SetAlwaysVisible(LegacyDoorActor->GetLegacyAlwaysVisible());
 					Component->SetAlwaysUnlocked(LegacyDoorActor->GetLegacyAlwaysUnlocked());
+					Component->SetDoorType(LegacyDoorActor->GetLegacyDoorType());
 				}
 				else
 				{
