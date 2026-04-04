@@ -46,6 +46,7 @@ public:
 	bool ShouldBeOpened() const;
 	bool ShouldBeLocked() const;
 
+	UFUNCTION(BlueprintGetter)
 	const UDoorType* GetDoorType() const;
 
 	UFUNCTION(BlueprintGetter)
@@ -59,6 +60,7 @@ public:
 	bool GetLegacyShouldBeOpen() const { return bShouldBeOpen; }
 	bool GetLegacyAlwaysVisible() const { return bAlwaysVisible; }
 	bool GetLegacyAlwaysUnlocked() const { return bAlwaysUnlocked; }
+	UDoorType* GetLegacyDoorType() const { return Type; }
 
 protected:
 	UFUNCTION()
@@ -96,7 +98,8 @@ protected:
 	UPROPERTY(BlueprintGetter = GetAlwaysUnlocked, BlueprintSetter = SetAlwaysUnlocked, SaveGame, Category = "Door", meta = (DisplayName = "Always Unlocked", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->AlwaysUnlocked instead."))
 	bool bAlwaysUnlocked {false};
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Door", meta = (DisplayName = "Door Type"))
+	// DEPRECATED: Ghost property for retro-compatibility with older plugin versions.
+	UPROPERTY(BlueprintGetter = GetDoorType, Category = "Door", meta = (DisplayName = "Door Type", DeprecatedProperty, DeprecationMessage = "Use DoorComponent->DoorType instead."))
 	UDoorType* Type {nullptr};
 
 	UPROPERTY(EditAnywhere, Category = "Door")

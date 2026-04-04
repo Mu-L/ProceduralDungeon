@@ -67,6 +67,8 @@ public:
 	void SetAlwaysVisible(bool bInAlwaysVisible) { bAlwaysVisible = bInAlwaysVisible; }
 	void SetAlwaysUnlocked(bool bInAlwaysUnlocked) { bAlwaysUnlocked = bInAlwaysUnlocked; }
 
+	void SetDoorType(UDoorType* DoorType) { Type = DoorType; }
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Door")
 	FDoorComponentOpenedDelegate OnDoorOpened;
